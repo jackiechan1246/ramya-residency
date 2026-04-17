@@ -1,5 +1,6 @@
 /* ============================================================
-   script.js — Ramya Residency Premium Hotel Website
+   script.js — Ramya Residency | Quiet Luxury Experience
+   Slow transitions, parallax, staggered reveals, side-drawer
 ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,9 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const navLinks = document.querySelectorAll('.nav-link');
   const sections = document.querySelectorAll('section[id]');
 
-  window.addEventListener('scroll', () => {
-    // Scrolled class
-    if (window.scrollY > 60) {
+  function handleScroll() {
+    const scrollY = window.scrollY;
+
+    // Scrolled class — frosted glass transition
+    if (scrollY > 80) {
       navbar.classList.add('scrolled');
     } else {
       navbar.classList.remove('scrolled');
@@ -20,8 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Active nav link highlight
     let current = '';
     sections.forEach(section => {
-      const sectionTop = section.offsetTop - 100;
-      if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+      const sectionTop = section.offsetTop - 140;
+      if (scrollY >= sectionTop) current = section.getAttribute('id');
     });
     navLinks.forEach(link => {
       link.classList.remove('active');
@@ -30,25 +33,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Back to top
     const btt = document.getElementById('backToTop');
-    if (window.scrollY > 400) btt.classList.add('visible');
+    if (scrollY > 500) btt.classList.add('visible');
     else btt.classList.remove('visible');
-  });
+  }
+
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  handleScroll();
 
 
-  /* ── 2. HAMBURGER MENU ── */
+  /* ── 2. HAMBURGER & SIDE DRAWER MENU ── */
   const hamburger = document.getElementById('hamburger');
-  const navLinksList = document.getElementById('navLinks');
+  const sideDrawer = document.getElementById('sideDrawer');
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  const drawerClose = document.getElementById('drawerClose');
+
+  function openDrawer() {
+    hamburger.classList.add('open');
+    sideDrawer.classList.add('open');
+    drawerOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    hamburger.classList.remove('open');
+    sideDrawer.classList.remove('open');
+    drawerOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
 
   hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('open');
-    navLinksList.classList.toggle('open');
+    if (sideDrawer.classList.contains('open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
   });
 
-  navLinksList.querySelectorAll('a').forEach(link => {
+  drawerClose.addEventListener('click', closeDrawer);
+  drawerOverlay.addEventListener('click', closeDrawer);
+
+  // Close drawer when clicking a link
+  document.querySelectorAll('.drawer-link').forEach(link => {
     link.addEventListener('click', () => {
-      hamburger.classList.remove('open');
-      navLinksList.classList.remove('open');
+      closeDrawer();
     });
+  });
+
+  // Close drawer on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sideDrawer.classList.contains('open')) {
+      closeDrawer();
+    }
   });
 
 
@@ -64,56 +99,58 @@ document.addEventListener('DOMContentLoaded', () => {
     dot.classList.add('dot');
     dot.setAttribute('aria-label', `Slide ${i + 1}`);
     if (i === 0) dot.classList.add('active');
-    dot.addEventListener('click', () => goToSlide(i));
+    dot.addEventListener('click', () => { goToSlide(i); resetSlider(); });
     dotsContainer.appendChild(dot);
   });
 
   function goToSlide(n) {
     slides[currentSlide].classList.remove('active');
-    dotsContainer.querySelectorAll('.dot')[currentSlide].classList.remove('active');
+    const dots = dotsContainer.querySelectorAll('.dot');
+    dots[currentSlide].classList.remove('active');
     currentSlide = (n + slides.length) % slides.length;
     slides[currentSlide].classList.add('active');
-    dotsContainer.querySelectorAll('.dot')[currentSlide].classList.add('active');
+    dots[currentSlide].classList.add('active');
   }
 
   function nextSlide() { goToSlide(currentSlide + 1); }
   function prevSlide() { goToSlide(currentSlide - 1); }
 
   function startSlider() {
-    sliderInterval = setInterval(nextSlide, 5000);
+    sliderInterval = setInterval(nextSlide, 6000); // Slower — luxury pacing
   }
   function resetSlider() {
     clearInterval(sliderInterval);
     startSlider();
   }
 
-  document.getElementById('sliderNext').addEventListener('click', () => { nextSlide(); resetSlider(); });
-  document.getElementById('sliderPrev').addEventListener('click', () => { prevSlide(); resetSlider(); });
-
   startSlider();
 
   // Swipe support for hero slider
   let heroTouchStartX = 0;
   const heroEl = document.querySelector('.hero');
-  heroEl.addEventListener('touchstart', e => { heroTouchStartX = e.touches[0].clientX; });
+  heroEl.addEventListener('touchstart', e => { heroTouchStartX = e.touches[0].clientX; }, { passive: true });
   heroEl.addEventListener('touchend', e => {
     const diff = heroTouchStartX - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); resetSlider(); }
   });
 
 
-  /* ── 4. FADE-IN INTERSECTION OBSERVER ── */
-  const fadeEls = document.querySelectorAll('.fade-in');
-  const observer = new IntersectionObserver((entries) => {
+  /* ── 4. SCROLL REVEAL (Intersection Observer) ── */
+  const revealElements = document.querySelectorAll('.reveal-up, .reveal-left, .reveal-right, .reveal-scale');
+
+  const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
+        revealObserver.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12 });
+  }, {
+    threshold: 0.08,
+    rootMargin: '0px 0px -40px 0px'
+  });
 
-  fadeEls.forEach(el => observer.observe(el));
+  revealElements.forEach(el => revealObserver.observe(el));
 
 
   /* ── 5. GALLERY LIGHTBOX ── */
@@ -141,8 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeLightbox() {
     lightbox.classList.remove('open');
     document.body.style.overflow = '';
-    // Give transition time before clearing src
-    setTimeout(() => { lightboxImg.src = ''; }, 300);
+    setTimeout(() => { lightboxImg.src = ''; }, 500);
   }
 
   function lightboxNavigate(dir) {
@@ -152,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lightboxImg.src = galleryImages[currentLightboxIndex].src;
       lightboxImg.alt = galleryImages[currentLightboxIndex].alt;
       lightboxImg.style.opacity = '1';
-    }, 200);
+    }, 250);
   }
 
   galleryItems.forEach((item, i) => {
@@ -176,69 +212,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Swipe support for lightbox
   let lbTouchStartX = 0;
-  lightbox.addEventListener('touchstart', e => { lbTouchStartX = e.touches[0].clientX; });
+  lightbox.addEventListener('touchstart', e => { lbTouchStartX = e.touches[0].clientX; }, { passive: true });
   lightbox.addEventListener('touchend', e => {
     const diff = lbTouchStartX - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 50) lightboxNavigate(diff > 0 ? 1 : -1);
   });
 
-
-  /* ── 6. TESTIMONIAL SLIDER ── */
-  const track = document.getElementById('testimonialTrack');
-  const cards = track.querySelectorAll('.testimonial-card');
-  const dotsWrap = document.getElementById('testimonialDots');
-  let currentTestimonial = 0;
-  let itemsVisible = 3;
-
-  function getItemsVisible() {
-    if (window.innerWidth < 900) return 1;
-    if (window.innerWidth < 1100) return 2;
-    return 3;
-  }
-
-  function buildTestimonialDots() {
-    dotsWrap.innerHTML = '';
-    itemsVisible = getItemsVisible();
-    const pages = Math.ceil(cards.length / itemsVisible);
-    for (let i = 0; i < pages; i++) {
-      const d = document.createElement('button');
-      d.classList.add('dot');
-      d.style.cssText = 'background:rgba(0,0,0,0.2)';
-      if (i === 0) {
-        d.classList.add('active');
-        d.style.cssText = 'background:var(--gold);width:24px;border-radius:4px;height:8px;';
-      }
-      d.addEventListener('click', () => goToTestimonial(i));
-      dotsWrap.appendChild(d);
-    }
-  }
-
-  function goToTestimonial(n) {
-    itemsVisible = getItemsVisible();
-    const cardWidth = cards[0].getBoundingClientRect().width + 32; // gap
-    currentTestimonial = n;
-    track.style.transform = `translateX(-${n * itemsVisible * cardWidth}px)`;
-    dotsWrap.querySelectorAll('.dot').forEach((d, i) => {
-      if (i === n) {
-        d.style.cssText = 'background:var(--gold);width:24px;border-radius:4px;height:8px;display:inline-block;';
-      } else {
-        d.style.cssText = 'background:rgba(0,0,0,0.15);width:8px;border-radius:50%;height:8px;display:inline-block;';
-      }
-    });
-  }
-
-  buildTestimonialDots();
-  window.addEventListener('resize', buildTestimonialDots);
-
-  // Auto scroll testimonials
-  setInterval(() => {
-    itemsVisible = getItemsVisible();
-    const pages = Math.ceil(cards.length / itemsVisible);
-    goToTestimonial((currentTestimonial + 1) % pages);
-  }, 4500);
+  // Lightbox image transition
+  lightboxImg.style.transition = 'opacity 0.3s ease';
 
 
-  /* ── 7. SMOOTH SCROLL for NAV ── */
+  /* ── 6. SMOOTH SCROLL for ALL ANCHOR LINKS ── */
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       const target = document.querySelector(this.getAttribute('href'));
@@ -252,26 +236,76 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* ── 8. BACK TO TOP ── */
+  /* ── 7. BACK TO TOP ── */
   document.getElementById('backToTop').addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
 
-  /* ── 9. NAVBAR CTA COLOR ── */
-  const navCta = document.getElementById('navCta');
+  /* ── 8. SUBTLE PARALLAX on HERO ── */
+  let ticking = false;
   window.addEventListener('scroll', () => {
-    if (window.scrollY < 100) {
-      navCta.style.borderColor = 'rgba(255,255,255,0.5)';
-      navCta.style.color = 'rgba(255,255,255,0.9)';
-    } else {
-      navCta.style.borderColor = 'var(--gold)';
-      navCta.style.color = 'var(--gold)';
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        const heroContent = document.querySelector('.hero-content');
+        if (heroContent && scrollY < window.innerHeight) {
+          const parallaxAmount = scrollY * 0.3;
+          const opacityAmount = 1 - (scrollY / window.innerHeight) * 1.2;
+          heroContent.style.transform = `translateY(${parallaxAmount}px)`;
+          heroContent.style.opacity = Math.max(0, opacityAmount);
+        }
+        ticking = false;
+      });
+      ticking = true;
     }
-  });
+  }, { passive: true });
 
 
-  /* ── 10. LIGHTBOX IMAGE TRANSITION STYLE ── */
-  lightboxImg.style.transition = 'opacity 0.2s ease';
+  /* ── 9. BOOKING FORM — WhatsApp Integration ── */
+  const bookingBtn = document.querySelector('.booking-form .btn-book');
+  if (bookingBtn) {
+    // Optional: Enhance the booking button to send WhatsApp with form data
+    bookingBtn.addEventListener('click', (e) => {
+      const name = document.getElementById('bookName')?.value || '';
+      const phone = document.getElementById('bookPhone')?.value || '';
+      const checkin = document.getElementById('bookCheckin')?.value || '';
+      const checkout = document.getElementById('bookCheckout')?.value || '';
+      const room = document.getElementById('bookRoom')?.value || '';
+      const guests = document.getElementById('bookGuests')?.value || '';
+
+      // If form has data, redirect to WhatsApp instead
+      if (name || checkin || room) {
+        e.preventDefault();
+        const message = encodeURIComponent(
+          `Hello, I'd like to book a room at Ramya Residency.\n\n` +
+          `Name: ${name}\n` +
+          `Phone: ${phone}\n` +
+          `Check-in: ${checkin}\n` +
+          `Check-out: ${checkout}\n` +
+          `Room: ${room}\n` +
+          `Guests: ${guests}`
+        );
+        window.open(`https://wa.me/918123574777?text=${message}`, '_blank');
+      }
+    });
+  }
+
+
+  /* ── 10. SET MIN DATE on BOOKING FIELDS ── */
+  const today = new Date().toISOString().split('T')[0];
+  const checkinField = document.getElementById('bookCheckin');
+  const checkoutField = document.getElementById('bookCheckout');
+  if (checkinField) checkinField.setAttribute('min', today);
+  if (checkoutField) checkoutField.setAttribute('min', today);
+
+  if (checkinField && checkoutField) {
+    checkinField.addEventListener('change', () => {
+      checkoutField.setAttribute('min', checkinField.value);
+      if (checkoutField.value && checkoutField.value < checkinField.value) {
+        checkoutField.value = checkinField.value;
+      }
+    });
+  }
 
 });
